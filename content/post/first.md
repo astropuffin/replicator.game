@@ -1,10 +1,9 @@
 +++
-title = "What is this"
+title = "What is it?"
 description = "First post"
 weight = 1
 type = "post"
 class="post first"
 +++
 
-# Header
-words
+Replicator is a game about evolution.
