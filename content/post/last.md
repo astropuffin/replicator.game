@@ -6,4 +6,4 @@ type = "post"
 class="post last"
 +++
 
-It is not yet released, but an alpha version will be out soon.
+It is not yet stable or feature complete, but you can buy it at the link below.

@@ -1,0 +1,16 @@
+<div align="center">
+  <br>
+  Buy Replicator Today! (pre-alpha, so expect lots of bugs)
+  <form action="https://8phfy4sek4.execute-api.us-east-1.amazonaws.com/v1/payments" method="POST" id="stripe_checkout">
+    <script
+      src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+      data-key="{{ .Site.Params.stripeApiKey }}"
+      data-amount="99"
+      data-name="Replicator"
+      data-description="Evolve"
+      data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
+      data-locale="auto">
+    </script>
+  </form>
+  <br>
+</div>
