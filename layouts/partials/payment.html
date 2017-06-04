@@ -1,6 +1,9 @@
 <div align="center">
   <br>
   Buy Replicator Today! (pre-alpha, so expect lots of bugs)
+  <button id="signin-button">Signin with google to buy!</button>
+  <button id="signout-button">Signout of google</button>
+
   <form action="https://8phfy4sek4.execute-api.us-east-1.amazonaws.com/v1/payments" method="POST" id="stripe_checkout">
     <script
       src="https://checkout.stripe.com/checkout.js" class="stripe-button"
@@ -13,4 +16,131 @@
     </script>
   </form>
   <br>
+  <!--aws cognito libraries-->
+  <script src="lib/jsbn.js"></script>
+  <!--http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn.js-->
+  <script src="lib/jsbn2.js"></script>
+  <!--http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn2.js-->
+  <script src="lib/sjcl.js"></script>
+  <!--https://raw.githubusercontent.com/bitwiseshiftleft/sjcl/master/sjcl.js-->
+  <script src="lib/aws-cognito-sdk.min.js"></script>
+  <!--https://raw.githubusercontent.com/aws/amazon-cognito-identity-js/master/dist/aws-cognito-sdk.min.js-->
+  <script src="lib/amazon-cognito-identity.min.js"></script>
+  <!--https://raw.githubusercontent.com/aws/amazon-cognito-identity-js/master/dist/amazon-cognito-identity.min.js-->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.6.12.js"></script>
+  <!--<script src="https://sdk.amazonaws.com/js/aws-sdk-2.6.12.min.js"></script>-->
+
+  <script type="text/javascript">
+      // https://console.developers.google.com/apis/credentials
+      var apiKey = 'AIzaSyDqj2hsOsS8K60KZ9r_I6WkiYOAC35_gFw';
+      // Discovery Doc found here: https://developers.google.com/people/api/rest/
+      var discoveryDocs = ["https://people.googleapis.com/$discovery/rest?version=v1"];
+      // https://console.developers.google.com/apis/credentials?project=_
+      var clientId = '217385137057-tag8h0hv1ufkoj6s4fnmldp16v5nsdra.apps.googleusercontent.com';
+      // https://developers.google.com/people/v1/how-tos/authorizing
+      var scopes = 'profile openid';
+
+      var signinButton  = document.getElementById('signin-button');
+      var signoutButton = document.getElementById('signout-button');
+      var stripeForm = document.getElementById('stripe_checkout');
+
+      signinButton.style.display = 'block';
+      signoutButton.style.display = 'block';
+      stripeForm.style.display = 'block';
+
+      function handleClientLoad() {
+          // Load the API client and auth2 library
+          gapi.load('client:auth2', initClient);
+      }
+
+      function initClient() {
+        gapi.client.init({
+            apiKey: apiKey,
+            discoveryDocs: discoveryDocs,
+            clientId: clientId,
+            scope: scopes
+        }).then(function () {
+          // Listen for sign-in state changes.
+          gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+          // Handle the initial sign-in state.
+
+          // don't call this on startup
+          updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+
+          signinButton.onclick = handleSigninClick;
+          signoutButton.onclick = handleSignoutClick;
+        });
+      }
+
+      //calls various functions when google oauth state changes
+      function updateSigninStatus(isSignedIn) {
+        if (isSignedIn) {
+          signinButton.style.display = 'none';
+          signoutButton.style.display = 'block';
+          stripeForm.style.display = 'block';
+          //makeApiCall();
+          gapi.client.people.people.get({
+            resourceName: 'people/me'
+          }).then(function(resp) {
+            var name = resp.result.names[0].givenName;
+            //call unity
+            //console.log("call unity after login")
+            //SendMessage ('loginHandler', 'setUsername', name);
+            //SendMessage ('loginHandler', 'signinListener');
+          });
+          cognitoLogin()
+        } else {
+          //console.log("call unity after logout")
+          signinButton.style.display = 'block';
+          signoutButton.style.display = 'none';
+          stripeForm.style.display = 'none';
+
+          //call unity
+          //SendMessage ('loginHandler', 'setUsername', 'unknown');
+          //SendMessage ('loginHandler', 'signoutListener');
+        }
+      }
+      function handleSigninClick() {
+        gapi.auth2.getAuthInstance().signIn();
+      }
+      function handleSignoutClick() {
+        gapi.auth2.getAuthInstance().signOut();
+      }
+      function cognitoLogin() {
+        var googleUser = gapi.auth2.getAuthInstance().currentUser.get()
+        var id_token = googleUser.getAuthResponse().id_token;
+        // Add the Google access token to the Cognito credentials login map.
+        console.log("googleID: " + id_token);
+        AWS.config.region = 'us-east-1';
+        var cognitoParams = {
+          IdentityPoolId: 'us-east-1:68014c68-5a88-4e84-809b-cd8bd21484aa',
+          Logins: {
+            'accounts.google.com': id_token
+          }
+        };
+        AWS.config.credentials = new AWS.CognitoIdentityCredentials(cognitoParams);
+        AWS.config.credentials.get(function(err) {
+          if (err) {
+            console.log("Error: "+err);
+            return;
+          }
+          var awsCreds = JSON.stringify({
+            AccessKeyId: AWS.config.credentials.accessKeyId,
+            SecretKey: AWS.config.credentials.secretAccessKey,
+            SessionToken: AWS.config.credentials.sessionToken,
+            IdentityId: AWS.config.credentials.identityId
+          })
+          //SendMessage('loginHandler', 'receiveAwsCreds', awsCreds);
+          //TODO: needs an action here.
+        })
+        ////TODO: use this UUID to somehow link to payment
+      }
+
+  </script>
+  <!-- Triggers login on page load -->
+  <script async defer src="https://apis.google.com/js/api.js"
+    onload="this.onload=function(){};handleClientLoad()"
+    onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+  </script>
 </div>
