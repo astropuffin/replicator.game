@@ -4,7 +4,7 @@
   <button id="signin-button">Signin with google to buy!</button>
   <button id="signout-button">Signout of google</button>
 
-  <form action="https://8phfy4sek4.execute-api.us-east-1.amazonaws.com/v1/payments" method="POST" id="stripe_checkout">
+  <form action="{{ . Site.Params.stripeEndpoint }}" method="POST" id="stripe_checkout">
     <script
       src="https://checkout.stripe.com/checkout.js" class="stripe-button"
       data-key="{{ .Site.Params.stripeApiKey }}"
