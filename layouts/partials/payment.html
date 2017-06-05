@@ -4,18 +4,6 @@
   <button id="signin-button">Signin with google to buy!</button>
   <button id="signout-button">Signout of google</button>
 
-  <form action="{{ . Site.Params.stripeEndpoint }}" method="POST" id="stripe_checkout">
-    <script
-      src="https://checkout.stripe.com/checkout.js" class="stripe-button"
-      data-key="{{ .Site.Params.stripeApiKey }}"
-      data-amount="99"
-      data-name="Replicator"
-      data-description="Evolve"
-      data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
-      data-locale="auto">
-    </script>
-  </form>
-  <br>
   <!--aws cognito libraries-->
   <script src="lib/jsbn.js"></script>
   <!--http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn.js-->
@@ -29,6 +17,22 @@
   <!--https://raw.githubusercontent.com/aws/amazon-cognito-identity-js/master/dist/amazon-cognito-identity.min.js-->
   <script src="https://sdk.amazonaws.com/js/aws-sdk-2.6.12.js"></script>
   <!--<script src="https://sdk.amazonaws.com/js/aws-sdk-2.6.12.min.js"></script>-->
+
+  <form action="{{ .Site.Params.stripeEndpoint }}" method="POST" id="stripe_checkout">
+    <input type=hidden id="formCognitoId" name="formCognitoId" value=""/>
+    <script
+      src="https://checkout.stripe.com/checkout.js" class="stripe-button"
+      data-key="{{ .Site.Params.stripeApiKey }}"
+      data-amount="99"
+      data-name="Replicator"
+      data-description="Evolve"
+      data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
+      data-locale="auto"
+      id="stripe_checkout_script"
+      >
+    </script>
+  </form>
+  <br>
 
   <script type="text/javascript">
       // https://console.developers.google.com/apis/credentials
@@ -44,7 +48,7 @@
       var signoutButton = document.getElementById('signout-button');
       var stripeForm = document.getElementById('stripe_checkout');
 
-      signinButton.style.display = 'block';
+      signinButton.style.display = 'none';
       signoutButton.style.display = 'block';
       stripeForm.style.display = 'block';
 
@@ -83,17 +87,24 @@
             resourceName: 'people/me'
           }).then(function(resp) {
             var name = resp.result.names[0].givenName;
+            console.log(resp.result.emailAddresses[0].value);
+            //This doesn't actually work as expected. Need to delete the existing script and add the new one with this attribute
+            document.getElementById("stripe_checkout_script").setAttribute("data-email",resp.result.emailAddresses[0].value);
             //call unity
             //console.log("call unity after login")
             //SendMessage ('loginHandler', 'setUsername', name);
             //SendMessage ('loginHandler', 'signinListener');
           });
           cognitoLogin()
+          //document.getElementById("formCognitoId").value = AWS.config.credentials.identityId;
+          //console.log("form field set");
+          //console.log(document.getElementById("formCognitoId").value);
         } else {
           //console.log("call unity after logout")
           signinButton.style.display = 'block';
           signoutButton.style.display = 'none';
           stripeForm.style.display = 'none';
+          document.getElementById("formCognitoId").value = "";
 
           //call unity
           //SendMessage ('loginHandler', 'setUsername', 'unknown');
@@ -130,6 +141,9 @@
             SessionToken: AWS.config.credentials.sessionToken,
             IdentityId: AWS.config.credentials.identityId
           })
+          console.log("form field set");
+          document.getElementById("formCognitoId").value = AWS.config.credentials.identityId;
+          console.log(document.getElementById("formCognitoId").value);
           //SendMessage('loginHandler', 'receiveAwsCreds', awsCreds);
           //TODO: needs an action here.
         })
