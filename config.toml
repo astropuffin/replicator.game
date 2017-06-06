@@ -4,5 +4,5 @@ baseurl = "https://replicator.game"
 [params]
   github = "https://github.com/astropuffin/replicator.game"
   description = "A game about real evolution in a simulated world"
-  stripeEndpoint = "https://api.replicator.game/experimental/payment"
-  stripeApiKey = "pk_test_3L5GNZ5lEEJNakPcETm0UO9k"
+  stripeEndpoint = "https://api.replicator.game/v1/payment"
+  stripeApiKey = "pk_live_R365PMWpNFqjoCstn37sPa1H"
