@@ -6,3 +6,6 @@ baseurl = "https://replicatorgame.com"
   description = "A game about real evolution in a simulated world"
   stripeEndpoint = "https://replicatorgame.com/v1/payment"
   stripeApiKey = "pk_live_R365PMWpNFqjoCstn37sPa1H"
+
+[build.environment]
+  HUGO_VERSION = "0.21"
