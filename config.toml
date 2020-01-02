@@ -1,6 +1,7 @@
 title = "Replicator"
 languageCode = "en-us"
 baseurl = "https://replicatorgame.com"
+theme = "hugoscroll"
 [params]
   github = "https://github.com/astropuffin/replicatorgamecom"
   description = "A game about real evolution in a simulated world"
