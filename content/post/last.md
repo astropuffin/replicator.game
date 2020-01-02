@@ -6,4 +6,4 @@ type = "post"
 class="post last"
 +++
 
-It is not yet stable or feature complete, but you can buy it at the link below. Only Windows is supported right now, but it will eventually be available on multiple operating systems.
+It is not yet stable or feature complete, but you can buy it at the link below. Only WebGL is supported right now, but it will eventually be available on multiple operating systems.
