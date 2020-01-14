@@ -4,157 +4,160 @@
   <button id="signin-button">Signin with google to buy!</button>
   <button id="signout-button">Signout of google</button>
 
-  <!--aws cognito libraries-->
-  <script src="lib/jsbn.js"></script>
-  <!--http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn.js-->
-  <script src="lib/jsbn2.js"></script>
-  <!--http://www-cs-students.stanford.edu/~tjw/jsbn/jsbn2.js-->
-  <script src="lib/sjcl.js"></script>
-  <!--https://raw.githubusercontent.com/bitwiseshiftleft/sjcl/master/sjcl.js-->
-  <script src="lib/aws-cognito-sdk.min.js"></script>
-  <!--https://raw.githubusercontent.com/aws/amazon-cognito-identity-js/master/dist/aws-cognito-sdk.min.js-->
-  <script src="lib/amazon-cognito-identity.min.js"></script>
-  <!--https://raw.githubusercontent.com/aws/amazon-cognito-identity-js/master/dist/amazon-cognito-identity.min.js-->
-  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.6.12.js"></script>
-  <!--<script src="https://sdk.amazonaws.com/js/aws-sdk-2.6.12.min.js"></script>-->
+  <script src="https://js.stripe.com/v3/"></script>
+  <script type="text/javascript">
+    var stripe = Stripe("{{ .Site.Params.stripeApiKey }}");
+    var elements = stripe.elements();
+  </script>
 
-  <form action="{{ .Site.Params.stripeEndpoint }}" method="POST" id="stripe_checkout">
-    <input type=hidden id="formCognitoId" name="formCognitoId" value=""/>
-    <script
-      src="https://checkout.stripe.com/checkout.js" class="stripe-button"
-      data-key="{{ .Site.Params.stripeApiKey }}"
-      data-amount="99"
-      data-name="Replicator"
-      data-description="Evolve"
-      data-image="https://stripe.com/img/documentation/checkout/marketplace.png"
-      data-locale="auto"
-      id="stripe_checkout_script"
-      >
-    </script>
+  <!-- The core Firebase JS SDK is always required and must be listed first -->
+  <script src="/__/firebase/7.6.1/firebase-app.js"></script>
+  <!-- TODO: Add SDKs for Firebase products that you want to use
+       https://firebase.google.com/docs/web/setup#available-libraries -->
+  <script src="/__/firebase/7.6.1/firebase-auth.js"></script>
+  <script src="/__/firebase/7.6.1/firebase-functions.js"></script>
+  <!-- Initialize Firebase -->
+  <script src="/__/firebase/init.js"></script>
+
+  <form action="{{ .Site.Params.stripeEndpoint }}" method="post" id="payment-form">
+    <input type=hidden id="firebaseUid" name="firebaseUid" value=""/>
+    <div class="form-row">
+      <label for="card-element">
+        Credit or debit card
+      </label>
+      <div id="card-element">
+        <!-- A Stripe Element will be inserted here. -->
+      </div>
+
+      <!-- Used to display Element errors. -->
+      <div id="card-errors" role="alert"></div>
+    </div>
+
+    <button>Submit Payment</button>
   </form>
-  <br>
+  <script type="text/javascript">
+    // Custom styling can be passed to options when creating an Element.
+    var style = {
+      base: {
+        // Add your base input styles here. For example:
+        fontSize: '16px',
+        color: '#32325d',
+      },
+    };
+    
+    // Create an instance of the card Element.
+    var card = elements.create('card', {style: style});
+    
+    // Add an instance of the card Element into the `card-element` <div>.
+    card.mount('#card-element');
+
+    // Create a token or display an error when the form is submitted.
+    var form = document.getElementById('payment-form');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+    
+      stripe.createToken(card).then(function(result) {
+        if (result.error) {
+          // Inform the customer that there was an error.
+          var errorElement = document.getElementById('card-errors');
+          errorElement.textContent = result.error.message;
+        } else {
+          // Send the token to your server.
+          stripeTokenHandler(result.token);
+        }
+      });
+    });
+
+    function stripeTokenHandler(token) {
+      // Insert the token ID into the form so it gets submitted to the server
+      var form = document.getElementById('payment-form');
+      var hiddenInput = document.createElement('input');
+      hiddenInput.setAttribute('type', 'hidden');
+      hiddenInput.setAttribute('name', 'stripeToken');
+      hiddenInput.setAttribute('value', token.id);
+      form.appendChild(hiddenInput);
+    
+      // Submit the form
+      form.submit();
+    }
+  </script>
 
   <script type="text/javascript">
-      // https://console.developers.google.com/apis/credentials
-      var apiKey = 'AIzaSyDqj2hsOsS8K60KZ9r_I6WkiYOAC35_gFw';
-      // Discovery Doc found here: https://developers.google.com/people/api/rest/
-      var discoveryDocs = ["https://people.googleapis.com/$discovery/rest?version=v1"];
-      // https://console.developers.google.com/apis/credentials?project=_
-      var clientId = '217385137057-tag8h0hv1ufkoj6s4fnmldp16v5nsdra.apps.googleusercontent.com';
-      // https://developers.google.com/people/v1/how-tos/authorizing
-      var scopes = 'profile openid';
+    var signinButton  = document.getElementById('signin-button');
+    var signoutButton = document.getElementById('signout-button');
+    var stripeForm = document.getElementById('payment-form');
 
-      var signinButton  = document.getElementById('signin-button');
-      var signoutButton = document.getElementById('signout-button');
-      var stripeForm = document.getElementById('stripe_checkout');
+    signinButton.style.display = 'none';
+    signoutButton.style.display = 'block';
+    stripeForm.style.display = 'block';
 
-      signinButton.style.display = 'none';
-      signoutButton.style.display = 'block';
-      stripeForm.style.display = 'block';
 
-      function handleClientLoad() {
-          // Load the API client and auth2 library
-          gapi.load('client:auth2', initClient);
-      }
-
-      function initClient() {
-        gapi.client.init({
-            apiKey: apiKey,
-            discoveryDocs: discoveryDocs,
-            clientId: clientId,
-            scope: scopes
-        }).then(function () {
-          // Listen for sign-in state changes.
-          gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-          // Handle the initial sign-in state.
-
-          // don't call this on startup
-          updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-
-          signinButton.onclick = handleSigninClick;
-          signoutButton.onclick = handleSignoutClick;
-        });
-      }
-
-      //calls various functions when google oauth state changes
-      function updateSigninStatus(isSignedIn) {
-        if (isSignedIn) {
-          signinButton.style.display = 'none';
-          signoutButton.style.display = 'block';
-          stripeForm.style.display = 'block';
-          //makeApiCall();
-          gapi.client.people.people.get({
-            resourceName: 'people/me'
-          }).then(function(resp) {
-            var name = resp.result.names[0].givenName;
-            console.log(resp.result.emailAddresses[0].value);
-            //This doesn't actually work as expected. Need to delete the existing script and add the new one with this attribute
-            document.getElementById("stripe_checkout_script").setAttribute("data-email",resp.result.emailAddresses[0].value);
-            //call unity
-            //console.log("call unity after login")
-            //SendMessage ('loginHandler', 'setUsername', name);
-            //SendMessage ('loginHandler', 'signinListener');
-          });
-          cognitoLogin()
-          //document.getElementById("formCognitoId").value = AWS.config.credentials.identityId;
-          //console.log("form field set");
-          //console.log(document.getElementById("formCognitoId").value);
+	function handleClientLoad() {
+      //wait for firebase to finish initializing
+      firebase.auth().useDeviceLanguage();
+      firebase.auth().onAuthStateChanged(function(user) {
+        //console.log("Firebase initialized.");
+        //TODO: Add a latch function to show loading until firebase is initialized, in order to prevent "login" events
+        // from firing beforehand. Should keep the "login" button disabled until this latch triggers.
+        if (user) {
+          updateSigninStatus(true);
         } else {
-          //console.log("call unity after logout")
-          signinButton.style.display = 'block';
-          signoutButton.style.display = 'none';
-          stripeForm.style.display = 'none';
-          document.getElementById("formCognitoId").value = "";
-
-          //call unity
-          //SendMessage ('loginHandler', 'setUsername', 'unknown');
-          //SendMessage ('loginHandler', 'signoutListener');
+          updateSigninStatus(false);
         }
-      }
-      function handleSigninClick() {
-        gapi.auth2.getAuthInstance().signIn();
-      }
-      function handleSignoutClick() {
-        gapi.auth2.getAuthInstance().signOut();
-      }
-      function cognitoLogin() {
-        var googleUser = gapi.auth2.getAuthInstance().currentUser.get()
-        var id_token = googleUser.getAuthResponse().id_token;
-        // Add the Google access token to the Cognito credentials login map.
-        console.log("googleID: " + id_token);
-        AWS.config.region = 'us-east-1';
-        var cognitoParams = {
-          IdentityPoolId: 'us-east-1:68014c68-5a88-4e84-809b-cd8bd21484aa',
-          Logins: {
-            'accounts.google.com': id_token
-          }
-        };
-        AWS.config.credentials = new AWS.CognitoIdentityCredentials(cognitoParams);
-        AWS.config.credentials.get(function(err) {
-          if (err) {
-            console.log("Error: "+err);
-            return;
-          }
-          var awsCreds = JSON.stringify({
-            AccessKeyId: AWS.config.credentials.accessKeyId,
-            SecretKey: AWS.config.credentials.secretAccessKey,
-            SessionToken: AWS.config.credentials.sessionToken,
-            IdentityId: AWS.config.credentials.identityId
-          })
-          console.log("form field set");
-          document.getElementById("formCognitoId").value = AWS.config.credentials.identityId;
-          console.log(document.getElementById("formCognitoId").value);
-          //SendMessage('loginHandler', 'receiveAwsCreds', awsCreds);
-          //TODO: needs an action here.
-        })
-        ////TODO: use this UUID to somehow link to payment
-      }
+      });
+      signinButton.onclick = handleSigninClick;
+      signoutButton.onclick = handleSignoutClick;
+    }
 
+    function updateSigninStatus(isSignedIn) {
+      if (isSignedIn) {
+        var user = firebase.auth().currentUser;
+        signinButton.style.display = 'none';
+        signoutButton.style.display = 'block';
+        stripeForm.style.display = 'block';
+        //TODO: use var stripeForm instead
+        document.getElementById("payment-form").setAttribute("firebaseUID",user.uid);
+        console.log(user.displayName + " with UID " + user.uid + " and email " + user.email + " is signed in.");
+      } else {
+        signinButton.style.display = 'block';
+        signoutButton.style.display = 'none';
+        stripeForm.style.display = 'none';
+        //TODO: use var stripeForm instead
+        document.getElementById("payment-form").setAttribute("firebaseUID","");
+        console.log("unknown user.");
+      }
+    }
+    function handleSigninClick() {
+      var provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider).then(function(result) {
+        console.log("sign in");
+        //_updateSigninStatus(true); //should already be listening for event
+        // This gives you a Google Access Token. You can use it to access the Google API.
+        var token = result.credential.accessToken;
+      }).catch(function(error) {
+        //_updateSigninStatus(false);
+        // Handle Errors here.
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // The email of the user's account used.
+        var email = error.email;
+        // The firebase.auth.AuthCredential type that was used.
+        var credential = error.credential;
+        // ...
+      });
+    }
+    function handleSignoutClick() {
+      firebase.auth().signOut().then(function() {
+        console.log("signout");
+        //_updateSigninStatus(false); //should already be listening for event
+      }).catch(function(error) {
+        console.log("error signing out.");
+        console.log(error);
+      });
+    }
   </script>
-  <!-- Triggers login on page load -->
-  <script async defer src="https://apis.google.com/js/api.js"
-    onload="this.onload=function(){};handleClientLoad()"
-    onreadystatechange="if (this.readyState === 'complete') this.onload()">
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+
+  <script defer type="text/javascript">
+    handleClientLoad();
   </script>
 </div>
